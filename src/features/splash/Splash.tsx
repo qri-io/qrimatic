@@ -23,11 +23,11 @@ const Splash: React.FC<{}> = () => {
 
   const [selectedFeaturedDatasetType, setSelectedFeaturedDatasetType] = useState('popular')
   useEffect(() => {
-    if (!datasets[Object.keys(datasets)[0]].length) {
-      loadSplashDatasets()(dispatch)
-    } else {
-      setSelectedFeaturedDatasetType(Object.keys(datasets)[0])
-    }
+    loadSplashDatasets()(dispatch)
+  }, [])
+
+  useEffect(() => {
+    setSelectedFeaturedDatasetType(Object.keys(datasets)[0])
   }, [ datasets ])
 
   const handleSearchSubmit = (query: string) => {
