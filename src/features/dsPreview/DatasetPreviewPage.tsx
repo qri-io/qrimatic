@@ -20,6 +20,7 @@ import ContentBoxSubTitle from "../../chrome/ContentBoxSubTitle"
 import { newVersionInfoFromDataset } from '../../qri/versionInfo'
 import Head from '../app/Head'
 import { selectSessionUserCanEditDataset } from '../dataset/state/datasetState'
+import { loadDataset } from '../dataset/state/datasetActions'
 
 interface DatasetPreviewPageProps {
   qriRef: QriRef
@@ -48,8 +49,12 @@ const DatasetPreviewPage: React.FC<DatasetPreviewPageProps> = ({
 
   useEffect(() => {
     const readmeComponent = document.getElementsByClassName('markdown-body')[0]
+    const { username, name, path } = dataset
     if (readmeComponent) {
       setReadmeHeight(readmeComponent.clientHeight + 64) // adding padding and see more button dimensions
+    }
+    if (username && name) {
+      dispatch(loadDataset({ username, name, path }))
     }
   }, [ dataset ])
 
