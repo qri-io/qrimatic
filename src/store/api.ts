@@ -1,6 +1,7 @@
 import { Middleware, Dispatch, AnyAction } from 'redux'
 import { ThunkDispatch } from 'redux-thunk'
 import jwtDecode from 'jwt-decode'
+import { toast } from 'react-toastify'
 
 import { RootState } from './store'
 import mapError from './mapError'
@@ -150,6 +151,7 @@ async function getJSON<T> (url: string, options: FetchOptions): Promise<T> {
   const res = await r.json()
   if (res.meta.code !== 200) {
     let err: ApiError = { code: res.meta.code, message: mapError(res.meta.error) }
+    toast.error(`❌ ${err.message}`)
     throw err // eslint-disable-line
   }
   return res as T
