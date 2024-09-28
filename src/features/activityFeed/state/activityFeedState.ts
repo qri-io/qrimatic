@@ -26,6 +26,12 @@ export function selectIsRunLogLoading (): (state: RootState) => boolean {
   }
 }
 
+export function selectIsRunLogLoadingMore (): (state: RootState) => boolean {
+  return (state: RootState) => {
+    return state.activityFeed.loadingMore
+  }
+}
+
 export function selectRunInfo (runID: string): (state: RootState) => RunLogInfoState {
   return (state: RootState) => {
     return state.activityFeed.runInfo[runID]
@@ -40,6 +46,7 @@ export interface RunLogInfoState {
 export interface ActivityFeedState {
   datasetLogs: Record<string, LogItem[]>
   loading: boolean
+  loadingMore: boolean
   error: ApiErr
   runInfo: Record<string, RunLogInfoState>
 }
@@ -47,6 +54,7 @@ export interface ActivityFeedState {
 const initialState: ActivityFeedState = {
   datasetLogs: {},
   loading: false,
+  loadingMore: false,
   error: NewApiErr(),
   runInfo: {}
 }
@@ -97,6 +105,30 @@ export const activityFeedReducer = createReducer(initialState, {
 
   'API_DATASET_ACTIVITY_RUNS_FAILURE': (state, action) => {
     state.loading = false
+    state.error = action.payload.err
+  },
+
+  'API_DATASET_ACTIVITY_RUNS_MORE_REQUEST': (state, action) => {
+    state.loadingMore = true
+  },
+
+  'API_DATASET_ACTIVITY_RUNS_MORE_SUCCESS': (state, action) => {
+    const datasetLogs = [...state.datasetLogs[refStringFromQriRef(action.qriRef)], ...action.payload.data]
+    state.datasetLogs[refStringFromQriRef(action.qriRef)] = datasetLogs
+    state.loadingMore = false
+  },
+
+  'API_DATASET_ACTIVITY_RUNS_MORE_FAILURE': (state, action) => {
+    state.error = action.payload.err
+    state.loadingMore = false
+  },
+
+  'API_DATASET_ACTIVITY_RUN_FIRST_SUCCESS': (state, action) => {
+    const datasetLogs = [ ...action.payload.data, ...state.datasetLogs[refStringFromQriRef(action.qriRef)]]
+    state.datasetLogs[refStringFromQriRef(action.qriRef)] = datasetLogs
+  },
+
+  'API_DATASET_ACTIVITY_RUNS_FIRST_FAILURE': (state, action) => {
     state.error = action.payload.err
   },
 

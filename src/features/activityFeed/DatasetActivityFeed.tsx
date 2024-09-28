@@ -4,7 +4,7 @@ import { QriRef } from '../../qri/ref'
 import useDimensions from 'react-use-dimensions'
 
 import ActivityList from './ActivityList'
-import { loadDatasetLogs } from './state/activityFeedActions'
+import { loadDatasetLogs, loadFirstDatasetLog } from './state/activityFeedActions'
 import { newDatasetLogsSelector, selectIsRunLogLoading } from './state/activityFeedState'
 import DatasetFixedLayout from '../dataset/DatasetFixedLayout'
 import { cancelRun, runNow } from '../workflow/state/workflowActions'
@@ -41,7 +41,13 @@ const DatasetActivityFeed: React.FC<DatasetActivityFeedProps> = ({
 
   useEffect(() => {
     dispatch(loadDatasetLogs({ username: qriRef.username, name: qriRef.name }))
-  }, [dispatch, qriRef.username, qriRef.name, latestRun?.status])
+  }, [dispatch, qriRef.username, qriRef.name])
+
+  useEffect(() => {
+    if (latestRun?.status === "succeeded") {
+      dispatch(loadFirstDatasetLog({ username: qriRef.username, name: qriRef.name }))
+    }
+  }, [latestRun?.status])
 
   const handleRunNowClick = () => {
     // runlog-run-now event
@@ -64,10 +70,8 @@ const DatasetActivityFeed: React.FC<DatasetActivityFeedProps> = ({
   }
 
   useEffect(() => {
-    if (!displayLogs.length) {
-      setDisplayLogs(logs)
-    }
-  }, [ logs, displayLogs ])
+    setDisplayLogs(logs)
+  }, [ logs ])
 
   useEffect(() => {
     if (logs.length && displayLogs.length && (logs.length >= displayLogs.length) && displayLogs[0].runStatus === 'running') {

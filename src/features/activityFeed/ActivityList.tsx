@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import React, { useEffect, useRef, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import ReactDataTable from 'react-data-table-component'
 
@@ -12,9 +12,12 @@ import RunStatusBadge from '../run/RunStatusBadge'
 import { LogItem } from '../../qri/log'
 import { customStyles, customSortIcon } from '../../features/collection/CollectionTable'
 import { runEndTime } from '../../utils/runEndTime'
+import { newQriRef } from '../../qri/ref'
 
-import { loadRunInfo } from './state/activityFeedActions'
-import { selectRunInfo, outputFromRunLog } from './state/activityFeedState'
+import { loadDatasetLogsMore, loadRunInfo, DATASET_LOG_PER_PAGE } from './state/activityFeedActions'
+import { selectRunInfo, outputFromRunLog, selectIsRunLogLoadingMore } from './state/activityFeedState'
+import { selectRunCount } from '../dataset/state/datasetState'
+import Spinner from '../../chrome/Spinner'
 
 interface ActivityListProps {
   log: LogItem[]
@@ -28,7 +31,45 @@ const ActivityList: React.FC<ActivityListProps> = ({
   containerHeight
 }) => {
   const [expandedRows, setExpandedRows] = useState<string[]>([])
+  const [loadMore, setLoadMore] = useState<boolean>(false)
   const dispatch = useDispatch()
+  const qriRef = newQriRef(useParams())
+  const totalLogCount = useSelector(selectRunCount)
+  const loadingMore = useSelector(selectIsRunLogLoadingMore())
+
+  const observer = useRef(
+    new IntersectionObserver(
+      (entries) => {
+        const first = entries[0]
+        if (first.isIntersecting) {
+          setLoadMore(true)
+        }
+      })
+  )
+
+  useEffect(() => {
+    const lastRow = document.querySelector(`#row-${log.length - 1}`)
+    const currentElement = lastRow
+    const currentObserver = observer.current
+
+    if (currentElement) {
+      currentObserver.observe(currentElement)
+    }
+
+    return () => {
+      if (currentElement) {
+        currentObserver.unobserve(currentElement)
+      }
+    }
+  }, [log.length])
+
+  useEffect(() => {
+    const limitForLoad = (totalLogCount - log.length) >= DATASET_LOG_PER_PAGE ? DATASET_LOG_PER_PAGE : totalLogCount - log.length
+    if (loadMore && limitForLoad) {
+      dispatch(loadDatasetLogsMore({ username: qriRef.username, name: qriRef.name }, log.length, limitForLoad))
+    }
+    setLoadMore(false)
+  }, [loadMore])
 
   // react-data-table column definitions
   const columns = [
@@ -152,26 +193,33 @@ const ActivityList: React.FC<ActivityListProps> = ({
 
   // borrows styles and icons from CollectionTable
   return (
-    <ReactDataTable
-      columns={columns}
-      data={log}
-      customStyles={customStyles}
-      fixedHeader
-      expandableRows
-      expandableRowExpanded={(row: LogItemWithExpanded) => {
-        return expandedRows.includes(row.runID)
-      }}
-      expandableRowsHideExpander
-      expandableRowsComponent={ExpandableComponent}
-      conditionalRowStyles={conditionalRowStyles}
-      fixedHeaderScrollHeight={`${String(containerHeight)}px`}
-      noHeader
-      style={{
-        background: 'blue'
-      }}
-      defaultSortField='name'
-      sortIcon={customSortIcon}
-    />
+    <>
+      <ReactDataTable
+        columns={columns}
+        data={log}
+        customStyles={customStyles}
+        fixedHeader
+        expandableRows
+        expandableRowExpanded={(row: LogItemWithExpanded) => {
+          return expandedRows.includes(row.runID)
+        }}
+        expandableRowsHideExpander
+        expandableRowsComponent={ExpandableComponent}
+        conditionalRowStyles={conditionalRowStyles}
+        fixedHeaderScrollHeight={`${String(containerHeight)}px`}
+        noHeader
+        style={{
+          background: 'blue'
+        }}
+        defaultSortField='name'
+        sortIcon={customSortIcon}
+      />
+      {loadingMore && (
+        <div className='h-full w-full flex justify-center items-center absolute top-0'>
+          <Spinner color='#43B3B2' />
+        </div>
+      )}
+    </>
   )
 }
 
